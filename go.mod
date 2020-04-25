@@ -13,7 +13,7 @@ require (
 	github.com/urfave/cli v1.22.4 // indirect
 	github.com/veandco/go-sdl2 v0.4.1 // indirect
 	go.bug.st/serial.v1 v0.0.0-20191202182710-24a6610f0541 // indirect
-	gobot.io/x/gobot v1.14.0 // indirect
+	gobot.io/x/gobot v1.14.0
 	gocv.io/x/gocv v0.23.0 // indirect
 	golang.org/x/crypto v0.0.0-20200423211502-4bdfaf469ed5 // indirect
 	golang.org/x/net v0.0.0-20200421231249-e086a090c8fd // indirect
