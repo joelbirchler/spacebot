@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"log"
 	"time"
 
@@ -10,37 +9,67 @@ import (
 	"gobot.io/x/gobot/platforms/raspi"
 )
 
+const (
+	adxl345Address = 0x53
+	bmp280Address  = 0x76
+)
+
+var (
+	pi      *raspi.Adaptor
+	adxl345 *i2c.ADXL345Driver
+	bmp280  *i2c.BMP280Driver
+)
+
+func init() {
+	pi = raspi.NewAdaptor()
+	adxl345 = i2c.NewADXL345Driver(pi, i2c.WithAddress(adxl345Address))
+	bmp280 = i2c.NewBMP280Driver(pi, i2c.WithAddress(bmp280Address))
+}
+
 func main() {
-	//log.Println("Hello!")
-
-	pi := raspi.NewAdaptor()
-	adxl := i2c.NewADXL345Driver(pi)
-	bmp280 := i2c.NewBMP280Driver(pi, i2c.WithAddress(0x76))
-	bmp280.Start()
-
-	work := func() {
-		gobot.Every(100*time.Millisecond, func() {
-			x, y, z, _ := adxl.XYZ()
-			a, _ := bmp280.Altitude()
-			p, err := bmp280.Pressure()
-			t, _ := bmp280.Temperature()
-
-			if err != nil {
-				log.Fatal(err)
-			}
-			// some functions would make this more sensable
-			//log.Printf("x: %.7f | y: %.7f | z: %.7f \n", x, y, z)
-
-			fmt.Print("\033[G\033[K")
-			fmt.Printf("x: %.4f | y: %.4f | z: %.4f |+| a: %.4f | p: %.4f | t: %.4f", x, y, z, a, p, t)
-		})
-	}
+	log.Println("Hello!")
 
 	robot := gobot.NewRobot(
 		"spacebot",
 		[]gobot.Connection{pi},
-		[]gobot.Device{adxl},
-		work)
+		[]gobot.Device{adxl345, bmp280},
+		func() { gobot.Every(60*time.Second, tick) },
+	)
 
 	robot.Start()
+}
+
+func tick() {
+	x, y, z, adxlErr := adxl345.XYZ()
+	altitude, pressure, temp, bmpErr := altPressTemp()
+
+	if adxlErr != nil {
+		log.Println("adxl read error:", adxlErr)
+	}
+
+	if bmpErr != nil {
+		log.Println("bmp read error:", bmpErr)
+	}
+
+	log.Println(x, y, z, altitude, pressure, temp)
+}
+
+func altPressTemp() (float32, float32, float32, error) {
+	// FIXME: Clean this up...
+	a, err := bmp280.Altitude()
+	if err != nil {
+		return 0.0, 0.0, 0.0, err
+	}
+
+	p, err := bmp280.Pressure()
+	if err != nil {
+		return 0.0, 0.0, 0.0, err
+	}
+
+	t, err := bmp280.Temperature()
+	if err != nil {
+		return 0.0, 0.0, 0.0, err
+	}
+
+	return a, p, t, nil
 }
