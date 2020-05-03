@@ -1,4 +1,4 @@
-HOST=linda
+HOST=gene
 
 all: build upload run
 
