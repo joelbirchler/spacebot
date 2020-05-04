@@ -65,14 +65,14 @@ func altPressTemp() (float32, float32, float32, error) {
 	}{}
 
 	for _, read := range []struct {
-		val float32
+		val *float32
 		fn  func() (float32, error)
 	}{
-		{val: apt.a, fn: bmp280.Altitude},
-		{val: apt.p, fn: bmp280.Pressure},
-		{val: apt.t, fn: bmp280.Temperature},
+		{val: &apt.a, fn: bmp280.Altitude},
+		{val: &apt.p, fn: bmp280.Pressure},
+		{val: &apt.t, fn: bmp280.Temperature},
 	} {
-		read.val, err = read.fn()
+		*read.val, err = read.fn()
 		if err != nil {
 			return 0.0, 0.0, 0.0, err
 		}
