@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"log"
 	"time"
 
@@ -33,7 +34,7 @@ func main() {
 		"spacebot",
 		[]gobot.Connection{pi},
 		[]gobot.Device{adxl345, bmp280},
-		func() { gobot.Every(60*time.Second, tick) },
+		func() { gobot.Every(100*time.Millisecond, tick) },
 	)
 
 	robot.Start()
@@ -51,25 +52,31 @@ func tick() {
 		log.Println("bmp read error:", bmpErr)
 	}
 
-	log.Println(x, y, z, altitude, pressure, temp)
+	fmt.Println(x, y, z, altitude, pressure, temp)
 }
 
 func altPressTemp() (float32, float32, float32, error) {
-	// FIXME: Clean this up...
-	a, err := bmp280.Altitude()
-	if err != nil {
-		return 0.0, 0.0, 0.0, err
+	var err error
+
+	apt := struct {
+		a float32
+		p float32
+		t float32
+	}{}
+
+	for _, read := range []struct {
+		val float32
+		fn  func() (float32, error)
+	}{
+		{val: apt.a, fn: bmp280.Altitude},
+		{val: apt.p, fn: bmp280.Pressure},
+		{val: apt.t, fn: bmp280.Temperature},
+	} {
+		read.val, err = read.fn()
+		if err != nil {
+			return 0.0, 0.0, 0.0, err
+		}
 	}
 
-	p, err := bmp280.Pressure()
-	if err != nil {
-		return 0.0, 0.0, 0.0, err
-	}
-
-	t, err := bmp280.Temperature()
-	if err != nil {
-		return 0.0, 0.0, 0.0, err
-	}
-
-	return a, p, t, nil
+	return apt.a, apt.p, apt.t, nil
 }
